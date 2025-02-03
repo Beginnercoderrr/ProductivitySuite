@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Productivity Suite</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #FF6347;
+            --background: #f5f5f5;
+            --text: #333;
+            --card-bg: #fff;
+            --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 8px 20px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+            --border-radius: 12px;
+        }
+
+        .dark-mode {
+            --primary: #00ff88;
+            --background: #2c2c2c;
+            --text: #fff;
+            --card-bg: #444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .main-content {
+            display: grid;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .task-form {
+            display: grid;
+            gap: 12px;
+        }
+
+        input, textarea, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #calendar {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 16px;
+        }
+
+        .note-editor {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        .note-preview {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .note-item {
+            background: var(--card-bg);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .note-item button {
+            background: var(--secondary);
+            color: #fff;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+            font-size: 0.8em;
+        }
+
+        .note-item button:hover {
+            background: #ff4500;
+        }
+
+        .note-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+
+        .analytics-chart {
+            margin-top: 24px;
+            position: relative;
+        }
+
+        .task-list {
+            margin-top: 24px;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: var(--card-bg);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+            text-decoration: line-through;
+        }
+
+        .task-item button {
+            background: var(--secondary);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .task-item button:hover {
+            background: #ff4500;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        /* Priority Colors */
+        .task-item.high-priority {
+            border-left: 6px solid #ff4444;
+        }
+
+        .task-item.medium-priority {
+            border-left: 6px solid #ffa500;
+        }
+
+        .task-item.low-priority {
+            border-left: 6px solid #ffd700;
+        }
+
+        .fc-event.high-priority {
+            background-color: #ff4444;
+            border-color: #ff4444;
+        }
+
+        .fc-event.medium-priority {
+            background-color: #ffa500;
+            border-color: #ffa500;
+        }
+
+        .fc-event.low-priority {
+            background-color: #ffd700;
+            border-color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="card">
+                <h1>Productivity Suite</h1>
+                <button id="theme-toggle">Toggle Theme</button>
+            </div>
+
+            <div class="card">
+                <h2>Add Task</h2>
+                <div class="task-form">
+                    <input type="text" id="task-title" placeholder="Task title">
+                    <textarea id="task-desc" placeholder="Description"></textarea>
+                    <input type="datetime-local" id="task-due">
+                    <select id="task-priority">
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                    <button id="add-task">Add Task</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Smart Notes</h2>
+                <textarea class="note-editor" id="note-editor" placeholder="Write your note..."></textarea>
+                <button id="save-note">Save Note</button>
+                <div id="notes-list" class="note-preview"></div>
+            </div>
+
+            <div class="card">
+                <h2>Spotify Player</h2>
+                <div id="spotify-player">
+                    <iframe src="https://open.spotify.com/embed/playlist/2vU4ibeRq3J9cLYhDBK1bK" width="100%" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="card">
+                <div id="calendar"></div>
+            </div>
+
+            <div class="card">
+                <h2>Task List</h2>
+                <div class="task-list" id="task-list"></div>
+            </div>
+
+            <div class="card">
+                <h2>Analytics</h2>
+                <canvas id="analytics-chart" class="analytics-chart"></canvas>
+                <div class="tooltip" id="chart-tooltip"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script>
+        // State Management
+        let state = {
+            tasks: JSON.parse(localStorage.getItem('tasks')) || [],
+            notes: JSON.parse(localStorage.getItem('notes')) || [],
+            settings: JSON.parse(localStorage.getItem('settings')) || {
+                darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches
+            }
+        };
+
+        // Save State to Local Storage
+        function saveState() {
+            localStorage.setItem('tasks', JSON.stringify(state.tasks));
+            localStorage.setItem('notes', JSON.stringify(state.notes));
+            localStorage.setItem('settings', JSON.stringify(state.settings));
+        }
+
+        // Initialize FullCalendar
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: state.tasks.map(task => ({
+                id: task.id,
+                title: task.title,
+                start: task.due,
+                className: `${task.priority}-priority`,
+                extendedProps: {
+                    description: task.description,
+                    priority: task.priority
+                }
+            })),
+            eventClick: (info) => {
+                const task = state.tasks.find(t => t.id === info.event.id);
+                const action = prompt("Edit or Delete? Type 'edit' or 'delete':").toLowerCase();
+                if (action === 'edit') {
+                    const newTitle = prompt("Edit task title:", task.title);
+                    const newDesc = prompt("Edit task description:", task.description);
+                    const newDue = prompt("Edit due date (YYYY-MM-DDTHH:MM):", task.due);
+                    const newPriority = prompt("Edit priority (low/medium/high):", task.priority);
+
+                    if (newTitle) task.title = newTitle;
+                    if (newDesc) task.description = newDesc;
+                    if (newDue) task.due = newDue;
+                    if (newPriority) task.priority = newPriority;
+
+                    info.event.setProp('title', task.title);
+                    info.event.setStart(task.due);
+                    info.event.setExtendedProp('description', task.description);
+                    info.event.setExtendedProp('priority', task.priority);
+                    info.event.setProp('classNames', `${task.priority}-priority`);
+
+                    saveState();
+                    renderTaskList();
+                    updateAnalytics();
+                } else if (action === 'delete') {
+                    state.tasks = state.tasks.filter(t => t.id !== info.event.id);
+                    info.event.remove();
+                    saveState();
+                    renderTaskList();
+                    updateAnalytics();
+                }
+            }
+        });
+        calendar.render();
+
+        // Add Task
+        document.getElementById('add-task').addEventListener('click', () => {
+            const task = {
+                id: Date.now(),
+                title: document.getElementById('task-title').value,
+                description: document.getElementById('task-desc').value,
+                due: document.getElementById('task-due').value,
+                priority: document.getElementById('task-priority').value,
+                completed: false
+            };
+            state.tasks.push(task);
+            calendar.addEvent({
+                id: task.id,
+                title: task.title,
+                start: task.due,
+                className: `${task.priority}-priority`,
+                extendedProps: {
+                    description: task.description,
+                    priority: task.priority
+                }
+            });
+
+            // Clear input fields
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-desc').value = '';
+            document.getElementById('task-due').value = '';
+            document.getElementById('task-priority').value = 'low';
+
+            saveState();
+            renderTaskList();
+            updateAnalytics();
+        });
+
+        // Render Task List
+        function renderTaskList() {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = state.tasks.map(task => `
+                <div class="task-item ${task.priority}-priority ${task.completed ? 'completed' : ''}">
+                    <div>
+                        <strong>${task.title}</strong>
+                        <p>${task.description}</p>
+                        <small>Due: ${new Date(task.due).toLocaleString()}</small>
+                    </div>
+                    <div>
+                        <button onclick="toggleTaskCompletion(${task.id})">
+                            ${task.completed ? 'Undo' : 'Complete'}
+                        </button>
+                        <button onclick="deleteTask(${task.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle Task Completion
+        function toggleTaskCompletion(taskId) {
+            const task = state.tasks.find(task => task.id === taskId);
+            task.completed = !task.completed;
+            saveState();
+            renderTaskList();
+            updateAnalytics();
+        }
+
+        // Delete Task
+        function deleteTask(taskId) {
+            state.tasks = state.tasks.filter(task => task.id !== taskId);
+            calendar.getEventById(taskId)?.remove();
+            saveState();
+            renderTaskList();
+            updateAnalytics();
+        }
+
+        // Notes Management
+        const noteEditor = document.getElementById('note-editor');
+        const notesList = document.getElementById('notes-list');
+
+        function renderNotes() {
+            notesList.innerHTML = state.notes.map((note, index) => `
+                <div class="note-item">
+                    <div>${note}</div>
+                    <div class="note-actions">
+                        <button onclick="editNote(${index})">Edit</button>
+                        <button onclick="deleteNote(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editNote(index) {
+            const updatedNote = prompt('Edit your note:', state.notes[index]);
+            if (updatedNote !== null) {
+                state.notes[index] = updatedNote;
+                saveState();
+                renderNotes();
+            }
+        }
+
+        function deleteNote(index) {
+            state.notes.splice(index, 1);
+            saveState();
+            renderNotes();
+        }
+
+        document.getElementById('save-note').addEventListener('click', () => {
+            const noteText = noteEditor.value.trim();
+            if (noteText) {
+                state.notes.push(noteText);
+                saveState();
+                noteEditor.value = '';
+                renderNotes();
+            }
+        });
+
+        // Analytics Chart
+        let analyticsChart;
+        const tooltip = document.getElementById('chart-tooltip');
+
+        function updateAnalytics() {
+            const completedTasks = state.tasks.filter(task => task.completed);
+            const pendingTasks = state.tasks.filter(task => !task.completed);
+            const overdueTasks = pendingTasks.filter(task => new Date(task.due) < new Date());
+
+            if (!analyticsChart) {
+                const ctx = document.getElementById('analytics-chart').getContext('2d');
+                analyticsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Completed', 'Pending', 'Overdue'],
+                        datasets: [{
+                            label: 'Tasks',
+                            data: [completedTasks.length, pendingTasks.length, overdueTasks.length],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(255, 99, 132, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(255, 99, 132, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        onHover: (event, chartElement) => {
+                            if (chartElement.length > 0) {
+                                const index = chartElement[0].index;
+                                const label = analyticsChart.data.labels[index];
+                                let tasks = [];
+                                if (label === 'Completed') tasks = completedTasks;
+                                else if (label === 'Pending') tasks = pendingTasks;
+                                else if (label === 'Overdue') tasks = overdueTasks;
+
+                                tooltip.innerHTML = `
+                                    <strong>${label} Tasks:</strong><br>
+                                    ${tasks.map(task => `• ${task.title}`).join('<br>') || 'None'}
+                                `;
+                                tooltip.style.opacity = 1;
+                                tooltip.style.left = `${event.x}px`;
+                                tooltip.style.top = `${event.y}px`;
+                            } else {
+                                tooltip.style.opacity = 0;
+                            }
+                        }
+                    }
+                });
+            } else {
+                analyticsChart.data.datasets[0].data = [
+                    completedTasks.length,
+                    pendingTasks.length,
+                    overdueTasks.length
+                ];
+                analyticsChart.update();
+            }
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            state.settings.darkMode = !state.settings.darkMode;
+            document.body.classList.toggle('dark-mode', state.settings.darkMode);
+            saveState();
+        });
+
+        // Initialize Theme
+        document.body.classList.toggle('dark-mode', state.settings.darkMode);
+
+        // Initial Render
+        renderTaskList();
+        renderNotes();
+        updateAnalytics();
+
+        // Tooltip Positioning
+        document.addEventListener('mousemove', (event) => {
+            if (tooltip.style.opacity === '1') {
+                tooltip.style.left = `${event.pageX + 10}px`;
+                tooltip.style.top = `${event.pageY + 10}px`;
+            }
+        });
+
+        // Markdown Preview for Notes
+        noteEditor.addEventListener('input', () => {
+            const preview = document.getElementById('note-preview');
+            if (preview) {
+                preview.innerHTML = marked.parse(noteEditor.value);
+            }
+        });
+
+        // Responsive Design Adjustments
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 768) {
+                document.querySelector('.container').style.gridTemplateColumns = '1fr';
+            } else {
+                document.querySelector('.container').style.gridTemplateColumns = '300px 1fr';
+            }
+        });
+
+        // Initial Responsive Check
+        if (window.innerWidth < 768) {
+            document.querySelector('.container').style.gridTemplateColumns = '1fr';
+        }
+    </script>
+</body>
+</html>
